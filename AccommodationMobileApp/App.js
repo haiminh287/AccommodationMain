@@ -22,6 +22,9 @@ import { MyLikeContext } from './configs/LikeContexts';
 import { RefreshProvider } from './configs/RefreshContexts';
 import Report from './components/Report/Report';
 import PostArticleLooking from './components/Article/PostArticleLooking';
+import AllArticle from './components/Admin/AllArtilce';
+import ArticleLookingDetails from './components/Article/ArticleLookingDetails';
+import PostHistory from './components/Article/PostHistory';
 
 const Stack = createNativeStackNavigator();
 const StackNavigator = () => {
@@ -31,6 +34,7 @@ const StackNavigator = () => {
       <Stack.Screen name="index" component={Home} />
       <Stack.Screen name="article" component={Article} />
       <Stack.Screen name="articleDetails" component={ArticleDetails} />
+      <Stack.Screen name="articleLookingDetails" component={ArticleLookingDetails} />
         <Stack.Screen name="chatDetails" component={ChatDetails} />
         {user===null?<>
         <Stack.Screen name="login" component={Login} />
@@ -64,7 +68,12 @@ const UserProfileStackNavigator = () => {
       <Stack.Screen name="profile" component={UserProfile} />
       <Stack.Screen name="postArticle" component={PostArticle} />
       <Stack.Screen name="postArticleLooking" component={PostArticleLooking} />
+      <Stack.Screen name="listAllArticle" component={AllArticle} />
+      <Stack.Screen name="articleDetails" component={ArticleDetails} />
+      <Stack.Screen name="articleLookingDetails" component={ArticleLookingDetails} />
+
       <Stack.Screen name="report" component={Report} />
+      <Stack.Screen name="postHistory" component={PostHistory} />
     </Stack.Navigator>
   );
 }
@@ -78,17 +87,52 @@ const TabNavigator = ()=> {
   const user = useContext(MyUserContext);
   const getTabBarVisibility = (route) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? 'home'; 
-    const hiddenRoutes = ['chatDetails', 'articleDetails', 'postArticle']; 
+    const hiddenRoutes = ['chatDetails', 'articleDetails', 'postArticle','articleLookingDetails']; 
+    console.log(hiddenRoutes.includes(routeName));
     return !hiddenRoutes.includes(routeName);
   };
 
-  
+  const getScreenTitle = (route) => {
+    let routeName = getFocusedRouteNameFromRoute(route);
+    if (!routeName) {
+      routeName= route.name;
+    }
+    const titles = {
+      home: 'Màn Hình Chính',
+      index: 'Màn Hình Chính',
+      login: 'Đăng Nhập',
+      register: 'Đăng Ký',
+      profileMain: 'Tài Khoản',
+      profile: 'Tài Khoản',
+      chat: 'Nhắn Tin',
+      chatMain: 'Nhắn Tin',
+      saveArticleMain: 'Tin Đã Lưu',
+      postArticle: 'Đăng Bài',
+      postArticleLooking: 'Đăng Bài',
+      listAllArticle: 'Kiểm Duyệt Bài',
+      articleDetails: 'Chi Tiết Bài',
+      articleLookingDetails: 'Chi Tiết Bài',
+      report: 'Xem Báo Cáo',
+      chatDetails: 'Chi Tiết Tin Nhắn',
+      saveArticle: 'Tin Đã Lưu',
+      postHistory: 'Lịch Sử Đăng Bài',
+    };
+    return titles[routeName]
+  };
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarStyle: {
           display: getTabBarVisibility(route) ? 'flex' : 'none', 
+        },
+        headerTitleStyle: {
+          color: 'white', 
+        },
+        headerTitle: getScreenTitle(route),
+        headerTitleAlign: 'center', 
+        headerStyle: {
+          backgroundColor: 'blue',
         },
       })}
     >

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Text, View, Button, StyleSheet, ScrollView } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import { BarChart } from "react-native-chart-kit";
 import { Dimensions } from "react-native";
 import APIs, { endpoints } from "../../configs/APIs";
@@ -7,12 +7,14 @@ import APIs, { endpoints } from "../../configs/APIs";
 const Report = () => {
   const [userStatistics, setUserStatistics] = useState([]);
   const [inkeeperStatistics, setInkeeperStatistics] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState('month');
 
   const loadData = async (period) => {
     const res = await APIs.get(endpoints['user-statistics'], { params: { period: period } });
     console.log(res.data);
     setUserStatistics(res.data.user_statistics);
     setInkeeperStatistics(res.data.inkeeper_statistics);
+    setSelectedPeriod(period);
   }
 
   useEffect(() => {
@@ -20,31 +22,30 @@ const Report = () => {
   }, []);
 
   const renderChart = (data, label) => {
+    const modifiedData = [{ period: '', count: 0 }, ...data];
     return (
       <BarChart
         data={{
-          labels: data.map(item => item.period),
+          labels: modifiedData.map(item => item.period),
           datasets: [
             {
-              data: data.map(item => item.count)
+              data: modifiedData.map(item => item.count)
             }
           ]
         }}
         width={Dimensions.get("window").width - 32} 
-        height={200} 
+        height={220} 
         chartConfig={{
-          backgroundColor: "#1cc910",
-          backgroundGradientFrom: "#eff3ff",
-          backgroundGradientTo: "#efefef",
-          yAxisInterval: 1,
-          fromZero: true,
+          backgroundColor: "#ffffff",
+          backgroundGradientFrom: "#ff9a9e",
+          backgroundGradientTo: "#fad0c4",
           decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-          labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+          color: (opacity = 0.5) => `rgba(0, 0, 139, ${opacity})`,
+          labelColor: (opacity = 0.5) => `rgba(0, 0, 0, ${opacity})`,
           style: {
             borderRadius: 16
           },
-          barPercentage: 0.5, 
+          barPercentage: 0.7, 
           propsForBackgroundLines: {
             strokeDasharray: "" 
           }
@@ -59,15 +60,17 @@ const Report = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Report</Text>
       <View style={styles.buttonContainer}>
-        <Button title="Tháng" onPress={() => loadData('month')} />
-        <Button title="Quý" onPress={() => loadData('quarter')} />
-        <Button title="Năm" onPress={() => loadData('year')} />
+        {['month', 'quarter', 'year'].map(period => (
+          <TouchableOpacity key={period} onPress={() => loadData(period)} style={styles.touchable}>
+            <Text style={styles.buttonText}>{period === 'month' ? 'Tháng' : period === 'quarter' ? 'Quý' : 'Năm'}</Text>
+            {selectedPeriod === period && <View style={styles.selectedIndicator} />}
+          </TouchableOpacity>
+        ))}
       </View>
-      <Text style={styles.subtitle}>User Statistics</Text>
+      <Text style={styles.subtitle}>Thông Kê Số Lượng Người Dùng</Text>
       {renderChart(userStatistics, "User Statistics")}
-      <Text style={styles.subtitle}>Inkeeper Statistics</Text>
+      <Text style={styles.subtitle}>Thông Kê Số Lượng Người Cho Thuê Trọ</Text>
       {renderChart(inkeeperStatistics, "Inkeeper Statistics")}
     </ScrollView>
   );
@@ -89,6 +92,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginVertical: 16,
+    backgroundColor: '#b3ffe6',
+  },
+  touchable: {
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  selectedIndicator: {
+    width: '100%',
+    height: 2,
+    backgroundColor: '#00ffaa',
+    marginTop: 4,
   },
   subtitle: {
     fontSize: 18,

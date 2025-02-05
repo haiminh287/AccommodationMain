@@ -11,8 +11,15 @@ const Article = ({ item ,isLike}) => {
     const [isFavorite, setIsFavorite] = useState(isLike);
     const nav = useNavigation();
     const {refresh,setRefresh } = useContext(RefreshContext);
+    const [images, setImages] = useState([]);
 
+    const loadImage = async () => {
+        const res = await APIs.get(endpoints['images-house'](item.id));
+        console.log(res.data);
+        setImages(res.data);
+    }
     const loadLikeArticles = async () => {
+        console.log('item', item);
         const token = await AsyncStorage.getItem('token');
         console.log(token);
         let ids = [];
@@ -40,10 +47,11 @@ const Article = ({ item ,isLike}) => {
     }
     useEffect(()=>{
         loadLikeArticles();
-        
+        loadImage();
     }, [refresh]);
     const toggleFavorite = async () => {
         const token =  await AsyncStorage.getItem('token');
+        console.log('item', item);
         if (token){
             const res = await authApis(token).post(endpoints['like-house'](item.id));
             console.log(res.data);
@@ -73,8 +81,8 @@ const Article = ({ item ,isLike}) => {
                 <Text style={styles.contact}>Contact: {item.contact}</Text>
                 <Text style={styles.location}>Location: {item.location}</Text>
                 <View style={styles.imagesContainer}>
-                {Array.isArray(item.images) && item.images.length > 0 ? (
-                    item.images.map((image, index) => (
+                {images.length > 0 ? (
+                    images.map((image, index) => (
                         <Image
                             key={index}
                             source={{ uri: image.image }}
@@ -125,11 +133,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         marginTop: 10,
+        
     },
     image: {
         width: 100,
         height: 100,
         margin: 5,
+        marginRight: 20,
     },
 });
 

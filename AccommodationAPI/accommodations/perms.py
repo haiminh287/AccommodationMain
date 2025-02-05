@@ -6,7 +6,7 @@ class OwnerPerms(permissions.IsAuthenticated):
     
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.user_role == UserEnum.ADMIN.value
+        return request.user.is_authenticated and request.user.is_superuser
 
 class IsInnkeeper(permissions.BasePermission):
     def has_permission(self, request, view):

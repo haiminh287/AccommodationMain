@@ -16,17 +16,46 @@ const ArticleDetails = ({ route }) => {
     const [showMap, setShowMap] = useState(false);
     const [comments, setComments] = useState([]);
     const [content, setContent] = useState('');
+    const [longitude, setLongitude] = useState(0);
+    const [latitude, setLatitude] = useState(0);
     const [follow, setFollow] = useState(false);
+    const [images, setImages] = useState([]);
+    const [articleDetail, setArticleDetail] = useState(null);
     const user = useContext(MyUserContext);
     const formattedDeposit = new Intl.NumberFormat('vi-VN').format(item.deposit);
 
+    console.log('main', item);
+    const loadImage = async () => {
+        const res = await APIs.get(endpoints['images-house'](item.id));
+        console.log(res.data);
+        setImages(res.data);
+    }
+    const loadArticleDetail = async () => {
+        try{
+        console.log('item',item.id);
+        const res = await APIs.get(endpoints['acquistion-article'](item.id));
+        console.log('data',res.data);
+        setArticleDetail(res.data);
+        }
+        catch(e){
+            console.log(e);
+        }
+        console.log('main',res.data);
+    }
+    const loadAddress = async () => {
+        const res = await APIs.get(endpoints['address-house'](item.id));
+        console.log('address',res.data);
+        setLatitude(res.data.latitude);
+        setLongitude(res.data.longitude);
+    }
     const loadFollow = async () => {
         if(user){
             const token = await AsyncStorage.getItem('token');
             console.log('token',token);
             const res = await authApis(token).get(endpoints['follow-user']);
-            console.log('data',res.data);
-            const isFollowing = res.data.some(follow => follow.followed_user === item.user.id);
+            console.log('dataFollow',res.data);
+            const isFollowing = res.data.some(follow => follow.followed_user === articleDetail.user.id);
+            console.log('isFollowing',isFollowing);
             setFollow(isFollowing);
         }
     }
@@ -58,11 +87,11 @@ const ArticleDetails = ({ route }) => {
     }
     const handleChatPress = () => {
         if (user) {
-            nav.navigate('chatDetails', { userReceive: item.user });
+            nav.navigate('chatDetails', { userReceive: articleDetail.user });
         } else {
             nav.navigate('login', {
                 redirect: 'chatDetails',
-                params: { userReceive: item.user },
+                params: { userReceive: articleDetail.user },
             });
         }
     };
@@ -78,16 +107,24 @@ const ArticleDetails = ({ route }) => {
             const token = await AsyncStorage.getItem('token');
             console.log('token',token);
             const res = await authApis(token).post(endpoints['follow-user'],{
-                "follow_user_id": item.user.id
+                "follow_user_id": articleDetail.user.id
             });
             setFollow(!follow);
             console.log('data',res.data);
         }
     }
     useEffect(()=>{
+        loadArticleDetail();
         loadComment(content);
         loadFollow();
+        loadAddress();
+        loadImage();
     },[]);
+    useEffect(() => {
+        if (articleDetail) {
+            loadFollow();
+        }
+    }, [articleDetail]);
     const toggleContent = () => {
         console.log('toggle');
         setShowFullContent(!showFullContent);
@@ -98,26 +135,28 @@ const ArticleDetails = ({ route }) => {
     };
     return (
         <View style={{ flex: 1 }}>
+            {articleDetail&&<>
             <ScrollView style={styles.container}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.location}>Địa Chỉ: {item.location}</Text>
+                <Text style={styles.title}>{articleDetail.title}</Text>
+                <Text style={styles.location}>Địa Chỉ: {articleDetail.location}</Text>
                 <Text style={styles.createdAt}>
-                Thời Gian Đăng: {moment(item.created_at).format('hh:mm:ss, DD/MM/YYYY')}
+                Thời Gian Đăng: {moment(articleDetail.created_at).format('hh:mm:ss, DD/MM/YYYY')}
                 </Text>
                 <Text style={styles.deposit}>Giá: {formattedDeposit} đ/tháng</Text>
-                <Text style={styles.numberPeople}>Số Người Ở: {item.number_people}</Text>
-                <Text style={styles.content}>*Đặc Điểm Nhà Trọ: </Text>
+                <Text style={styles.numberPeople}>Số Người Ở: {articleDetail.number_people}</Text>
+                {articleDetail.acquisitions && <Text style={styles.content}>*Đặc Điểm Nhà Trọ: </Text>}
                 <View>
-                {item.acquisitions.map((acquisition) => (
+                {articleDetail.acquisitions && articleDetail.acquisitions.map((acquisition) => (
                     <Text key={acquisition.id} style={styles.content}>
                     - {acquisition.name}: {acquisition.value}
                     </Text>
                 ))}
                 </View>
-                <Text style={styles.content}>
-                    Mô Tả Chi Tiết: {showFullContent ? item.content : `${item.content.substring(0, 100)}...`}
-                </Text>
-                {item.content.length > 100 && (
+                
+                {/* <Text style={styles.content}>
+                    Mô Tả Chi Tiết: {showFullContent ? articleDetail.content : `${articleDetail.content.substring(0, 100)}...`}
+                </Text> */}
+                {articleDetail.content.length > 100 && (
                     <TouchableOpacity onPress={toggleContent}>
                         <Text style={styles.seeMore}>{showFullContent ? 'Thu gọn' : 'Xem chi tiết'}</Text>
                     </TouchableOpacity>
@@ -126,25 +165,36 @@ const ArticleDetails = ({ route }) => {
                 <MapView
                     style={styles.map}
                     initialRegion={{
-                        latitude:parseFloat(item.latitude) ,
-                        longitude: parseFloat(item.longitude),
+                        latitude:parseFloat(latitude) ,
+                        longitude: parseFloat(longitude),
                         latitudeDelta: 0.0922,
                         longitudeDelta: 0.0421,
                     }}
                 >
                     <Marker
                         coordinate={{
-                            latitude: parseFloat(item.latitude),
-                            longitude: parseFloat(item.longitude),
+                            latitude: parseFloat(latitude),
+                            longitude: parseFloat(longitude),
                         }}
-                        title={item.title}
-                        description={item.location}
+                        title={articleDetail.title}
+                        description={articleDetail.location}
                     />
                 </MapView>
             )}
             <TouchableOpacity onPress={toggleMap}>
                 <Text style={styles.seeMore}>{showMap ? 'Ẩn bản đồ' : 'Xem bản đồ'}</Text>
             </TouchableOpacity>
+            <View style={styles.imagesContainer}>
+                {images.length > 0 ? (
+                    images.map((image, index) => (
+                        <Image
+                            key={index}
+                            source={{ uri: image.image }}
+                            style={styles.image}
+                        />
+                    ))
+                ): null}
+            </View>
             <View style={styles.commentContainer}>
                     {comments && comments.map(c => (
                         <List.Item
@@ -166,14 +216,13 @@ const ArticleDetails = ({ route }) => {
                 onChangeText={setContent}></TextInput>
                 <Button title='Gửi' color="#6200ee" onPress={()=> sendComment(content)}></Button>
             </View>
-
             </ScrollView>
 
             <View style={styles.userContainer}>
                 <Text style={styles.userName}>
-                    {item.user.first_name} {item.user.last_name}
+                    {articleDetail.user.first_name} {articleDetail.user.last_name}
                 </Text>
-                <Text>{item.user.phone}</Text>
+                <Text>{articleDetail.user.phone}</Text>
                 <View style={styles.iconContainer}>
                     <TouchableOpacity onPress={handleChatPress} style={styles.chatButton}>
                         <FontAwesome name="comments" size={24} color="blue" />
@@ -196,7 +245,7 @@ const ArticleDetails = ({ route }) => {
                     </TouchableOpacity>
                 </View>
             </View>
-            
+            </>}
         </View>
     );
 };
@@ -310,7 +359,19 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 200,
         marginTop: 10,
-    }
+    },
+    imagesContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginTop: 10,
+        
+    },
+    image: {
+        width: 100,
+        height: 100,
+        margin: 5,
+        marginRight: 20,
+    },
 });
 
 export default ArticleDetails;

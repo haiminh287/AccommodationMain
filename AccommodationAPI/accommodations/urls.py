@@ -9,6 +9,7 @@ route.register(r'addtionall-infomaion', views.AddtionallInfomaionViewSet, basena
 route.register(r'acquistion-article', views.AcquistionArticleViewSet, basename='acquistion-article')
 route.register(r'looking-article', views.LookingArticleViewSet, basename='looking-article')
 route.register(r'like', views.LikeViewSet, basename='like')
+route.register(r'articles',views.HouseArticleViewSet, basename='article')
 urlpatterns = [
     path('', include(route.urls)),
     path('user-statistics/', views.UserStatisticsView.as_view(), name='user-statistics'),

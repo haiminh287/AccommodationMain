@@ -30,6 +30,9 @@ const UserProfile = () => {
   const viewListArticle = ()=>{
     nav.navigate("listAllArticle");
   }
+  const viewPostHistory = ()=>{
+    nav.navigate("postHistory");
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -37,7 +40,7 @@ const UserProfile = () => {
         <Card.Content>
           <View style={styles.profileContainer}>
             <Image
-              source={{ uri: `https://res.cloudinary.com/dsz7vteia/${user.avatar}` }}
+              source={{ uri: user.avatar }}
               style={styles.avatar}
             />
             <View style={styles.infoContainer}>
@@ -46,21 +49,30 @@ const UserProfile = () => {
               <Paragraph style={styles.paragraph}>Họ: {user.first_name}</Paragraph>
               <Paragraph style={styles.paragraph}>Tên: {user.last_name}</Paragraph>
               <Paragraph style={styles.paragraph}>Số điện thoại: {user.phone}</Paragraph>
-              <Paragraph style={styles.paragraph}>Vai trò: {user.user_role}</Paragraph>
+              {user.is_superuser?
+              <Paragraph style={styles.paragraph}>Vai trò: Quản Trị Viên</Paragraph>:<Paragraph style={styles.paragraph}>Vai trò: {user.user_role}</Paragraph> }
+              
             </View>
           </View>
         </Card.Content>
         <Button onPress={logout} style={styles.button} mode="contained">Đăng xuất</Button>
-        {user.user_role === "Chủ Nhà Trọ" ? (
+      {user.user_role === "Chủ Nhà Trọ" ? (
+        <>
           <Button onPress={postArticle} style={styles.button} mode="contained">Đăng bài</Button>
-        ) : (
+          <Button onPress={viewPostHistory} style={styles.button} mode="contained">Lịch Sử Đăng Bài</Button>
+        </>
+      ) : user.user_role === "Người Tìm Trọ" && !user.is_superuser ? (
+        <>
           <Button onPress={postArticleLooking} style={styles.button} mode="contained">Đăng bài</Button>
-        )}
-        {user.is_superuser && (<>
+          <Button onPress={viewPostHistory} style={styles.button} mode="contained">Lịch Sử Đăng Bài</Button>
+        </>
+      ) : null}
+      {user.is_superuser && (
+        <>
           <Button onPress={viewReport} style={styles.button} mode="contained">Xem Báo Cáo</Button>
-          <Button onPress={viewReport} style={styles.button} mode="contained">Kiểm Duyệt Bài</Button>
-          </>
-        )}
+          <Button onPress={viewListArticle} style={styles.button} mode="contained">Kiểm Duyệt Bài</Button>
+        </>
+      )}
       </Card>
     </ScrollView>
   );

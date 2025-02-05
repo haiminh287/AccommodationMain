@@ -54,6 +54,7 @@ class ConversationSerializer(serializers.ModelSerializer):
 
 
 class HouseArticleSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
     class Meta:
         model = HouseArticle
         fields = '__all__'
@@ -72,15 +73,30 @@ class ImageHouseSerializer(BaseSerializer):
         fields = ['id', 'house', 'image']
 
 
-
 class AcquistionArticleSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    images = ImageHouseSerializer(many=True, source='imagehouse_set')
-    acquisitions = AddtionallInfomaionSerializer(many=True, source='addtionallinfomaion_set')
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if isinstance(self, AcquisitionDetailSerializer):
+            return representation
+        required_fields = ['id', 'title', 
+                           'location', 'contact', 
+                           'deposit', 'area',
+                           'updated_at'] 
+        for field in list(representation.keys()):
+            if field not in required_fields:
+                representation.pop(field)  
+
+        return representation
+
     class Meta:
         model = AcquistionArticle
         fields = '__all__'
 
+class AcquisitionDetailSerializer(AcquistionArticleSerializer):
+    user = UserSerializer()
+    class Meta:
+        model = AcquistionArticleSerializer.Meta.model
+        fields = '__all__'
 
 class LookingArticleSerializer(serializers.ModelSerializer):
     user = UserSerializer()
@@ -88,6 +104,11 @@ class LookingArticleSerializer(serializers.ModelSerializer):
         model = LookingArticle
         fields = '__all__'
 
+class LookingArticleDetailSerializer(LookingArticleSerializer):
+    user = UserSerializer()
+    class Meta:
+        model = LookingArticleSerializer.Meta.model
+        exclude = ['active']
 
 class LikeSerializer(serializers.ModelSerializer):
     house = HouseArticleSerializer()

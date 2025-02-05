@@ -63,7 +63,7 @@ const ArticleLooking = ({ item, isLike }) => {
 
     return (
         <View style={styles.articleContainer}>
-            <TouchableOpacity onPress={() => { nav.navigate("articleDetails", { item: filteredItem }) }}>
+            <TouchableOpacity onPress={() => { nav.navigate("articleLookingDetails", { item: filteredItem }) }}>
                 <View style={styles.header}>
                     <Text style={styles.title}>{filteredItem.title}</Text>
                     <TouchableOpacity onPress={toggleFavorite}>

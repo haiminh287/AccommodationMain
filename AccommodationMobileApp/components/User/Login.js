@@ -43,8 +43,8 @@ const Login = () => {
             setLoading(true);
             console.info(endpoints['login']);
             let res = await APIs.post(endpoints['login'],{
-                "client_id": "QuzlrRcQ8BCfTQCSV8pJjyPf2C598Ph6hbttKyT1",
-                "client_secret": "FR99Rfzg9NQz0GeMDVXKRdsF6cNpgd0tbmmKor9wH9cqvbrpTXErr2Ryxq8z99DiOhM2neupcD7LKwBerJJCiK0l7ZR9Si8R9cGYXYEYBAqrCBKvXnjflJrYlYNbymUi",
+                "client_id": "Uzr75ssE97eipbBP5hhHimfq2R00gawX47okqA51",
+                "client_secret": "wmq9DI2W05UelNgoyVQqARIEtWHeSuQRmf9MTBGMKiRkGAL45KlKvYMhyiNOxmHmVDliirInN7pT171aTgS2QKZg8rit0qhgTIbPc2qulMxA8441igBn4qIpbP0ImXJZ",
                 "grant_type": "password",
                 ...user
             });

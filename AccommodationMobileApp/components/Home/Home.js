@@ -53,24 +53,10 @@ const Home = () => {
     }, [selectedProvince]);
 
     const loadHouseArticles = async () => {
-        let province = "";
-        let district = "";
         setLoading(true);
         let url = `${endpoints[selectedType]}`;
         if (numPeople || price || selectedDistrict || selectedProvince) {
-            for (let i =0; i< provinces.length; i++) {
-                if (provinces[i].value === selectedProvince) {
-                    province = provinces[i].label;
-                    break;
-                }
-            }
-            for (let i =0; i< districts.length; i++) {
-                if (districts[i].value === selectedDistrict) {
-                    district = districts[i].label;
-                    break;
-                }
-            }
-            url += '?' + 'number_people=' + numPeople + '&deposit=' + price + '&district=' + district + '&province=' + province;
+            url += '?' + 'number_people=' + numPeople + '&deposit=' + price + '&district=' + selectedDistrict + '&province=' + selectedProvince;
         }
         try {
             const res = await APIs.get(url);
@@ -106,7 +92,6 @@ const Home = () => {
     return (
         <PaperProvider>
             <View style={styles.container}>
-                <Text style={styles.header}>Bài Viết</Text>
                 <Dropdown
                     label={"Chọn loại bài viết"}
                     mode={"outlined"}

@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from accommodations import serializers
-from accommodations.models import User,HouseArticle,UserEnum,HouseArticle,AddtionallInfomaion,Like,AcquistionArticle,LookingArticle,Comment,FollowUser
+from accommodations.models import User,HouseArticle,UserEnum,HouseArticle,AddtionallInfomaion,Like,AcquistionArticle,LookingArticle,Comment,FollowUser,ImageHouse,AddressHouseArticle
 from accommodations import perms
 from django.db.models.functions import TruncMonth, TruncYear, TruncQuarter
 from django.db.models import Count
@@ -18,13 +18,6 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
     def get_permissions(self):
         if self.action in ['get_current_user']:
             return [permissions.IsAuthenticated()]
-        elif self.action in ['list', 'retrieve']:
-            if self.request.user.user_role == UserEnum.ADMIN.value:
-                return [perms.IsAdmin()]
-            elif self.request.user.user_role == UserEnum.INKEEPER.value:
-                return [perms.IsInnkeeper()]
-            elif self.request.user.user_role == UserEnum.TENANT.value:
-                return [perms.IsTenant()]
         return [permissions.AllowAny()]
 
     @action(methods=['get'], url_path='current-user', detail=False)
@@ -47,18 +40,38 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
                 return Response({'message': 'Followed successfully'}, status=status.HTTP_201_CREATED)
         follow_users = FollowUser.objects.filter(user=request.user)
         return Response(serializers.FollowUserSerializer(follow_users,many=True).data)
+    
+    @action(methods=['get'],url_path='post-history',detail=False)
+    def get_history(self,request):
+        user = request.user
+        state = request.query_params.get('state')
+        if state:
+            house = HouseArticle.objects.filter(user=user,state=state)
+        else:
+            house = HouseArticle.objects.filter(user=user)
+        return Response(serializers.HouseArticleSerializer(house,many=True).data)
+    
 
 class HouseArticleViewSet(viewsets.ViewSet,generics.ListCreateAPIView):
     queryset = HouseArticle.objects.filter(active=True)
     serializer_class = serializers.HouseArticleSerializer
 
-    def get_queryset(self):
-        query = self.queryset
-        state = self.request.query_params.get('state')
-        print('state',state)
-        if state:
-            query = query.filter(state=state)
-        return query
+
+    def execute_before_create(self, request, **kwargs):
+        data_clone = request.data.copy()
+
+        data_clone['user'] = request.user.id
+            
+        return data_clone
+    
+    def execute_after_create(self, request, **kwargs):
+        data_clone = request.data.copy()
+        images = request.FILES.getlist('images')
+        if images:
+            for image in images:
+                ImageHouse.objects.create(image=image, house=kwargs['article'])
+        return data_clone
+    
     @action(methods=['get','post'],url_path='comments',detail=True)
     def get_comments(self,request,pk=None):
         house = self.get_object()
@@ -69,11 +82,6 @@ class HouseArticleViewSet(viewsets.ViewSet,generics.ListCreateAPIView):
         comments = self.get_object().comment_set.select_related('user').filter(active=True)
         return Response(serializers.CommentSerializer(comments,many=True, context={'request': request}).data)
     
-    @action(methods=['get'],url_path='address',detail=False)
-    def get_address(self,request):
-        house = self.get_object()
-        address = house.addresshousearticle_set.first()
-        return Response(serializers.AddressHouseArticleSerializer(address).data)
     
     @action(methods=['post'], url_path='likes', detail=True)
     def like_acquistion(self, request, pk=None):
@@ -96,15 +104,54 @@ class HouseArticleViewSet(viewsets.ViewSet,generics.ListCreateAPIView):
                 print('articles dont in',request.session['liked_articles'])
                 request.session['liked_articles'] = liked_articles
                 return Response({'status': 'Liked'})
+            
+    @action(methods=['get'],url_path='images',detail=True)
+    def get_house_images(self,request,pk=None):
+        images = self.get_object().imagehouse_set.all()
+        return Response(serializers.ImageHouseSerializer(images,many=True,context={'request': request}).data)
+            
+    @action(methods=['get'], detail=True, url_path='additionals')
+    def get_additional_infos(self, request, pk):
+        adds = self.get_object().additionalinfomation_set.all()
+        return Response(serializers.AddtionallInfomaionSerializer(adds, many=True).data)
 
 class AddtionallInfomaionViewSet(viewsets.ViewSet,generics.ListCreateAPIView):
     queryset = AddtionallInfomaion.objects.all()
     serializer_class = serializers.AddtionallInfomaionSerializer
 
-class AcquistionArticleViewSet(viewsets.ViewSet, generics.ListCreateAPIView):
+class AcquistionArticleViewSet(HouseArticleViewSet, generics.ListCreateAPIView,generics.RetrieveUpdateAPIView):
     queryset = AcquistionArticle.objects.filter(active=True).order_by('-id')
     serializer_class = serializers.AcquistionArticleSerializer
 
+    def get_permissions(self):
+        if self.action in ['create']:
+            return [perms.IsInnkeeper()]
+
+        return super().get_permissions()
+    
+    def create(self, request, *args, **kwargs):
+        data_clone = dict(request.data)
+        print(data_clone)
+
+        address = data_clone.pop('address', None)
+
+        data_clone = self.execute_before_create(request)
+        print(data_clone)
+
+        serializer = self.get_serializer(data=data_clone)
+        serializer.is_valid(raise_exception=True)
+        ac_article = serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        if address:
+            AddressHouseArticle.objects.create(**address, house=ac_article)
+        self.execute_after_create(request, article=ac_article)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def retrieve(self, request, *args, **kwargs):
+        data = self.get_object()
+        return Response(serializers.AcquisitionDetailSerializer(data).data)
+    
     def get_queryset(self):
         query = self.queryset
         kw = self.request.query_params.get('kw')
@@ -123,22 +170,49 @@ class AcquistionArticleViewSet(viewsets.ViewSet, generics.ListCreateAPIView):
             query = query.filter(district__icontains=district)
         if province:
             query = query.filter(city__icontains=province)
+        state = self.request.query_params.get('state')
+        print('state',state)
+        if state:
+            query = query.filter(state=state)
         return query
-
-    @action(methods=['get'],url_path='images',detail=True)
-    def get_house_images(self,request,pk=None):
-        images = self.get_object().imagehouse_set.all()
-        return Response(serializers.ImageHouseSerializer(images,many=True,context={'request': request}).data)
     
-    
-    
+    @action(methods=['get'],url_path='address',detail=True)
+    def get_address(self,request,pk=None):
+        house = self.get_object()
+        address = house.addresshousearticle_set.first()
+        return Response(serializers.AddressHouseArticleSerializer(address).data)
 
 
-class LookingArticleViewSet(viewsets.ViewSet,generics.ListCreateAPIView):
+class LookingArticleViewSet(viewsets.ViewSet,generics.ListCreateAPIView,generics.RetrieveUpdateAPIView):
     queryset = LookingArticle.objects.filter(active=True).order_by('-id')
     serializer_class = serializers.LookingArticleSerializer
-    # pagination_class = paginators.ItemPaginator
+    def get_queryset(self):
+        query = self.queryset
+        state = self.request.query_params.get('state')
+        print('state',state)
+        if state:
+            query = query.filter(state=state)
+        return query
+
+    def get_permissions(self):
+        if self.action in ['create']:
+            return [perms.IsTenant()]
+        return super().get_permissions()
+
     
+    def retrieve(self, request, *args, **kwargs):
+        return Response(serializers.LookingArticleDetailSerializer(request.data).data)
+
+    
+    def create(self, request, *args, **kwargs):
+        data_clone = request.data.copy()
+        data_clone = self.execute_before_create(request)
+
+        serializer = self.get_serializer(data=data_clone)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 class LikeViewSet(viewsets.ViewSet,generics.ListAPIView):
     serializer_class = serializers.LikeSerializer
@@ -165,8 +239,6 @@ class LikeViewSet(viewsets.ViewSet,generics.ListAPIView):
             articles = queryset
             article_serializer = serializers.HouseArticleSerializer(articles, many=True, context={'request': request})
             return Response(article_serializer.data)
-
-
 
 
 

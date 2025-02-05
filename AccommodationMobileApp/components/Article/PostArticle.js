@@ -1,8 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Text, View, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
+import { Text, View, TextInput, Button, StyleSheet, ScrollView, Alert, TouchableOpacity, Image } from 'react-native';
 import axios from 'axios';
 import { Dropdown } from 'react-native-paper-dropdown';
-import { PaperProvider, Card, Title } from 'react-native-paper';
+import { PaperProvider, Card, Title, Icon } from 'react-native-paper';
+import APIs, { authApis, endpoints } from '../../configs/APIs';
+import { MyUserContext } from '../../configs/UserContexts';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import Styles from '../../styles/Styles';
+import * as ImagePicker from 'expo-image-picker';
 
 const PostArticle = () => {
     const [title, setTitle] = useState('');
@@ -16,13 +22,16 @@ const PostArticle = () => {
     const [districts, setDistricts] = useState([]);
     const [selectedProvince, setSelectedProvince] = useState(null);
     const [selectedDistrict, setSelectedDistrict] = useState(null);
+    const [images, setImages] = useState([]);
+    const user = useContext(MyUserContext);
+    const navigation = useNavigation();
 
     const loadProvinces = async () => {
         try {
             const res = await axios.get('https://vn-public-apis.fpo.vn/provinces/getAll?limit=-1');
             setProvinces(res.data.data.data.map(province => ({
-                label: province.name_with_type, 
-                value: province.code 
+                label: province.name_with_type,
+                value: province.code
             })));
         } catch (error) {
             console.error("Error fetching provinces:", error);
@@ -51,28 +60,80 @@ const PostArticle = () => {
         }
     }, [selectedProvince]);
 
-    const handleSubmit = () => {
+    const pickImage = async () => {
+        let { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (status !== 'granted') {
+            alert("Permissions denied!");
+        } else {
+            const result = await ImagePicker.launchImageLibraryAsync();
+            if (!result.canceled) {
+                try{
+                    setImages([...images, ...result.assets]);
+                    console.log('image',images);
+                }
+                catch (e) {
+                    console.log(e);
+              }
+            }
+        }
+        }
+    const handleSubmit = async () => {
         const data = new FormData();
         data.append('title', title);
         data.append('content', content);
         data.append('contact', contact);
-        data.append('number_people', numberPeople);
-        data.append('deposit', deposit);
+        data.append('location', location)
+        data.append('number_people', parseInt(numberPeople));
+        data.append('deposit', parseFloat(deposit));
         data.append('area', area);
-        data.append('province', selectedProvince);
+        data.append('city', selectedProvince);
         data.append('district', selectedDistrict);
-
-        axios.post('http://your-django-api-url/house-articles/', data, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        })
-            .then(response => {
-                console.log('Article posted:', response.data);
-            })
-            .catch(error => {
-                console.error('Error posting article:', error);
+        data.append('user', user);
+        data.append('stateAcqui', true);
+        data.append('active', true);
+        images.forEach((image, index) => {
+            data.append('images', {
+                uri: image.uri,
+                type:image.mimeType , 
+                name:image.fileName
             });
+        });
+        console.log('data', data);
+        // if(images.length <3){
+        //     Alert.alert("Please upload at least 3 images");
+        //     return;
+        // }
+        let token = await AsyncStorage.getItem('token', null)
+        console.log(`token: ${token}`)
+        let res = null
+
+        // navigation.navigate('profile')
+
+        if (token) {
+            try {
+                res = await authApis(token).post(endpoints['acquistion-articles'], data, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    }
+                });
+                console.log('main-data',res.data);
+                
+            } catch (e) {
+                console.log(e);
+            }
+            finally {
+                if (res?.status === 201) {
+                    alert(`${res.statusText}: Da tao thanh cong tai khoan`);
+                }
+                else
+                    alert(`${res.statusText}: Xay ra loi trong qua trinh tao`);
+            }
+        }
+        else
+            alert(`error: Cann't get token when loading`);
+        
+        console.log('end');
     };
 
     return (
@@ -110,6 +171,15 @@ const PostArticle = () => {
                         )}
 
                         {selectedDistrict && <TextInput style={styles.input} placeholder="Địa Chỉ" value={location} onChangeText={setLocation} />}
+                        <TouchableOpacity onPress={pickImage}>
+                            <Text style={Styles.margin}><Icon source="camera"></Icon>Chọn ảnh </Text>
+                        </TouchableOpacity>
+
+                        <View style={styles.imageContainer}>
+                        {images.map((image, index) => (
+                            <Image key={index} source={{ uri: image.uri }} style={{ width: 100, height: 100 }} />
+                        ))}
+                        </View>
                     </Card.Content>
                 </Card>
                 <Button title="Đăng Bài" onPress={handleSubmit} color="#6200ee" style={styles.button} />
@@ -132,6 +202,16 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         elevation: 3,
     },
+    imageContainer: {
+        flexDirection: 'row',
+        flexWrap: 'nowrap', 
+        overflow: 'scroll', 
+      },
+      image: {
+        width: 100,
+        height: 100,
+        marginRight: 8,
+      },
     header: {
         fontSize: 24,
         fontWeight: 'bold',
