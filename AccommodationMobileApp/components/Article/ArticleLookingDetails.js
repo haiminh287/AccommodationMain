@@ -1,32 +1,45 @@
-import { Button, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
-import { authApis, endpoints } from "../../configs/APIs";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useContext, useEffect, useState } from "react";
-import { MyUserContext } from "../../configs/UserContexts";
-import { useNavigation } from "@react-navigation/native";
-import MapView, { Marker } from "react-native-maps";
-import moment from "moment";
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import React, { useContext, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView,Button, Image, Alert } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import moment from 'moment';
+import { MyUserContext } from '../../configs/UserContexts';
+import {  List, TextInput } from 'react-native-paper';
+import APIs, { authApis, endpoints } from '../../configs/APIs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ArticleLookingDetails = ({route})=>{
+const ArticleLookingDetails = ({ route }) => {
     const item = route.params?.item;
     const isMe = route.params?.isMe;
     const nav = useNavigation();
     const [showFullContent, setShowFullContent] = useState(false);
-    const [showMap, setShowMap] = useState(false);
     const [comments, setComments] = useState([]);
     const [content, setContent] = useState('');
     const [follow, setFollow] = useState(false);
+    const [articleDetail, setArticleDetail] = useState(null);
     const user = useContext(MyUserContext);
     const formattedDeposit = new Intl.NumberFormat('vi-VN').format(item.deposit);
 
+    console.log('item',item);
+    const loadArticleDetail = async () => {
+        try{
+        const res = await APIs.get(endpoints['looking-article'](item.id));
+        console.log('dataMain',res.data);
+        setArticleDetail(res.data);
+        }
+        catch(e){
+            console.log(e);
+        }
+        console.log('main',res.data);
+    }
     const loadFollow = async () => {
         if(user){
             const token = await AsyncStorage.getItem('token');
             console.log('token',token);
             const res = await authApis(token).get(endpoints['follow-user']);
-            console.log('data',res.data);
-            const isFollowing = res.data.some(follow => follow.followed_user === item.user.id);
+            console.log('dataFollow',res.data);
+            const isFollowing = res.data.some(follow => follow.followed_user === articleDetail.user.id);
+            console.log('isFollowing',isFollowing);
             setFollow(isFollowing);
         }
     }
@@ -52,17 +65,16 @@ const ArticleLookingDetails = ({route})=>{
         const res = await authApis(token).post(endpoints['comment-article'](item.id),{
             "content": content
         });
-        console.log('data',res.data);
         setComments([...comments, res.data]); 
         setContent('');
     }
     const handleChatPress = () => {
         if (user) {
-            nav.navigate('chatDetails', { userReceive: item.user });
+            nav.navigate('chatDetails', { userReceive: articleDetail.user });
         } else {
             nav.navigate('login', {
                 redirect: 'chatDetails',
-                params: { userReceive: item.user },
+                params: { userReceive: articleDetail.user },
             });
         }
     };
@@ -78,69 +90,50 @@ const ArticleLookingDetails = ({route})=>{
             const token = await AsyncStorage.getItem('token');
             console.log('token',token);
             const res = await authApis(token).post(endpoints['follow-user'],{
-                "follow_user_id": item.user.id
+                "follow_user_id": articleDetail.user.id
             });
             setFollow(!follow);
             console.log('data',res.data);
         }
     }
     useEffect(()=>{
+        loadArticleDetail();
         loadComment(content);
         loadFollow();
-    },[]);
+    },[item.id]);
+    useEffect(() => {
+        if (articleDetail) {
+            loadFollow();
+        }
+    }, [articleDetail]);
     const toggleContent = () => {
         console.log('toggle');
         setShowFullContent(!showFullContent);
     };
 
-    const toggleMap = () => {
-        setShowMap(!showMap);
-    };
     return (
         <View style={{ flex: 1 }}>
+            {articleDetail && <>
             <ScrollView style={styles.container}>
-            {item.title && <Text style={styles.title}>{item.title}</Text>}
-            {item.location && <Text style={styles.location}>Địa Chỉ: {item.location}</Text>}
-            {item.created_at && (
+            {articleDetail.title && <Text style={styles.title}>{articleDetail.title}</Text>}
+            {articleDetail.location && <Text style={styles.location}>Địa Chỉ: {articleDetail.location}</Text>}
+            {articleDetail.created_at && (
             <Text style={styles.createdAt}>
-                Thời Gian Đăng: {moment(item.created_at).format('hh:mm:ss, DD/MM/YYYY')}
+                Thời Gian Đăng: {moment(articleDetail.created_at).format('hh:mm:ss, DD/MM/YYYY')}
             </Text>
             )}
-            {item.deposit && <Text style={styles.deposit}>Giá: {formattedDeposit} đ/tháng</Text>}
-            {item.number_people && <Text style={styles.numberPeople}>Số Người Ở: {item.number_people}</Text>}
-            {item.content && (
+            {articleDetail.deposit && <Text style={styles.deposit}>Giá: {formattedDeposit} đ/tháng</Text>}
+            {articleDetail.number_people && <Text style={styles.numberPeople}>Số Người Ở: {articleDetail.number_people}</Text>}
+            {articleDetail.content && (
             <Text style={styles.content}>
-                Mô Tả Chi Tiết: {showFullContent ? item.content : `${item.content.substring(0, 100)}...`}
+                Mô Tả Chi Tiết: {showFullContent ? articleDetail.content : `${articleDetail.content.substring(0, 100)}...`}
             </Text>
             )}
-            {item.content && item.content.length > 100 && (
+            {articleDetail.content && item.content.length > 100 && (
             <TouchableOpacity onPress={toggleContent}>
                 <Text style={styles.seeMore}>{showFullContent ? 'Thu gọn' : 'Xem chi tiết'}</Text>
             </TouchableOpacity>
             )}
-                {showMap && (
-                <MapView
-                    style={styles.map}
-                    initialRegion={{
-                        latitude:parseFloat(item.latitude) ,
-                        longitude: parseFloat(item.longitude),
-                        latitudeDelta: 0.0922,
-                        longitudeDelta: 0.0421,
-                    }}
-                >
-                    <Marker
-                        coordinate={{
-                            latitude: parseFloat(item.latitude),
-                            longitude: parseFloat(item.longitude),
-                        }}
-                        title={item.title}
-                        description={item.location}
-                    />
-                </MapView>
-            )}
-            <TouchableOpacity onPress={toggleMap}>
-                <Text style={styles.seeMore}>{showMap ? 'Ẩn bản đồ' : 'Xem bản đồ'}</Text>
-            </TouchableOpacity>
             <View style={styles.commentContainer}>
                     {comments && comments.map(c => (
                         <List.Item
@@ -166,9 +159,9 @@ const ArticleLookingDetails = ({route})=>{
 
             {!isMe && <View style={styles.userContainer}>
                 <Text style={styles.userName}>
-                    {item.user.first_name} {item.user.last_name}
+                    {articleDetail.user.first_name} {articleDetail.user.last_name}
                 </Text>
-                <Text>{item.user.phone}</Text>
+                <Text>{articleDetail.user.phone}</Text>
                 <View style={styles.iconContainer}>
                     <TouchableOpacity onPress={handleChatPress} style={styles.chatButton}>
                         <FontAwesome name="comments" size={24} color="blue" />
@@ -191,7 +184,7 @@ const ArticleLookingDetails = ({route})=>{
                     </TouchableOpacity>
                 </View>
             </View>}
-            
+            </>}
         </View>
     );
 };

@@ -37,8 +37,8 @@ const Report = () => {
         height={220} 
         chartConfig={{
           backgroundColor: "#ffffff",
-          backgroundGradientFrom: "#ff9a9e",
-          backgroundGradientTo: "#fad0c4",
+          backgroundGradientFrom: "#e0f7fa",
+          backgroundGradientTo: "#80deea",
           decimalPlaces: 0,
           color: (opacity = 0.5) => `rgba(0, 0, 139, ${opacity})`,
           labelColor: (opacity = 0.5) => `rgba(0, 0, 0, ${opacity})`,
@@ -62,15 +62,16 @@ const Report = () => {
     <ScrollView style={styles.container}>
       <View style={styles.buttonContainer}>
         {['month', 'quarter', 'year'].map(period => (
-          <TouchableOpacity key={period} onPress={() => loadData(period)} style={styles.touchable}>
-            <Text style={styles.buttonText}>{period === 'month' ? 'Tháng' : period === 'quarter' ? 'Quý' : 'Năm'}</Text>
-            {selectedPeriod === period && <View style={styles.selectedIndicator} />}
+          <TouchableOpacity key={period} onPress={() => loadData(period)} style={[styles.touchable, selectedPeriod === period && styles.selectedButton]}>
+            <Text style={[styles.buttonText, selectedPeriod === period && styles.selectedButtonText]}>
+              {period === 'month' ? 'Tháng' : period === 'quarter' ? 'Quý' : 'Năm'}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
-      <Text style={styles.subtitle}>Thông Kê Số Lượng Người Dùng</Text>
+      <Text style={styles.subtitle}>Thống Kê Số Lượng Người Dùng</Text>
       {renderChart(userStatistics, "User Statistics")}
-      <Text style={styles.subtitle}>Thông Kê Số Lượng Người Cho Thuê Trọ</Text>
+      <Text style={styles.subtitle}>Thống Kê Số Lượng Người Cho Thuê Trọ</Text>
       {renderChart(inkeeperStatistics, "Inkeeper Statistics")}
     </ScrollView>
   );
@@ -80,37 +81,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f4f8',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 16,
+    color: '#00796b',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginVertical: 16,
-    backgroundColor: '#b3ffe6',
+    backgroundColor: '#b2ebf2',
+    borderRadius: 8,
+    padding: 8,
   },
   touchable: {
     alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  selectedButton: {
+    backgroundColor: '#00796b',
   },
   buttonText: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#00796b',
   },
-  selectedIndicator: {
-    width: '100%',
-    height: 2,
-    backgroundColor: '#00ffaa',
-    marginTop: 4,
+  selectedButtonText: {
+    color: '#ffffff',
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginVertical: 8,
+    color: '#00796b',
   },
 });
 

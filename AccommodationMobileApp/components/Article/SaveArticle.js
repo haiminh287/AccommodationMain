@@ -13,13 +13,13 @@ const SaveArticle = ()=> {
         console.log(token);
         if(token){
             const res =  await authApis(token).get(endpoints['user-like-house']);
-            console.log('data',res.data);
+            console.log('main',res.data);
             setArticles(res.data);
         }
         else{
           try{
             const res =  await APIs.get(endpoints['user-like-house']);
-            console.log('data',res.data);
+            console.log('main',res.data);
             setArticles(res.data);
           }
           catch(e){

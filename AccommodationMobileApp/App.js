@@ -79,8 +79,6 @@ const UserProfileStackNavigator = () => {
 }
 
 
-const listTab = ['home', 'login', 'register', 'profileMain', 'chat'];
-// hi
 
 const Tab = createBottomTabNavigator();
 const TabNavigator = ()=> {
@@ -91,6 +89,8 @@ const TabNavigator = ()=> {
     console.log(hiddenRoutes.includes(routeName));
     return !hiddenRoutes.includes(routeName);
   };
+
+
 
   const getScreenTitle = (route) => {
     let routeName = getFocusedRouteNameFromRoute(route);
@@ -132,8 +132,11 @@ const TabNavigator = ()=> {
         headerTitle: getScreenTitle(route),
         headerTitleAlign: 'center', 
         headerStyle: {
-          backgroundColor: 'blue',
+          backgroundColor: 'rgba(255, 153, 153,0.8)',
+          borderRadius:20,
+          
         },
+        headerShown: getScreenTitle(route) === 'Màn Hình Chính' ? false : true,
       })}
     >
       <Tab.Screen name="home" component={StackNavigator} options={{title: "Màn hình chính", tabBarIcon: () => <Icon source="home-account" size={20} />}} />

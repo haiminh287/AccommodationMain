@@ -1,13 +1,14 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView,Button, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView, Button, Image, Alert } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import MapView, { Marker } from 'react-native-maps';
 import moment from 'moment';
 import { MyUserContext } from '../../configs/UserContexts';
-import {  List, TextInput } from 'react-native-paper';
+import { List, TextInput } from 'react-native-paper';
 import APIs, { authApis, endpoints } from '../../configs/APIs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const ArticleDetails = ({ route }) => {
     const item = route.params?.item;
@@ -31,31 +32,31 @@ const ArticleDetails = ({ route }) => {
         setImages(res.data);
     }
     const loadArticleDetail = async () => {
-        try{
-        console.log('item',item.id);
-        const res = await APIs.get(endpoints['acquistion-article'](item.id));
-        console.log('data',res.data);
-        setArticleDetail(res.data);
+        try {
+            console.log('item', item.id);
+            const res = await APIs.get(endpoints['acquistion-article'](item.id));
+            console.log('data', res.data);
+            setArticleDetail(res.data);
         }
-        catch(e){
+        catch (e) {
             console.log(e);
         }
-        console.log('main',res.data);
+        console.log('main', res.data);
     }
     const loadAddress = async () => {
         const res = await APIs.get(endpoints['address-house'](item.id));
-        console.log('address',res.data);
+        console.log('address', res.data);
         setLatitude(res.data.latitude);
         setLongitude(res.data.longitude);
     }
     const loadFollow = async () => {
-        if(user){
+        if (user) {
             const token = await AsyncStorage.getItem('token');
-            console.log('token',token);
+            console.log('token', token);
             const res = await authApis(token).get(endpoints['follow-user']);
-            console.log('dataFollow',res.data);
+            console.log('dataFollow', res.data);
             const isFollowing = res.data.some(follow => follow.followed_user === articleDetail.user.id);
-            console.log('isFollowing',isFollowing);
+            console.log('isFollowing', isFollowing);
             setFollow(isFollowing);
         }
     }
@@ -74,15 +75,15 @@ const ArticleDetails = ({ route }) => {
     const loadComment = async () => {
         const res = await APIs.get(endpoints['comment-article'](item.id));
         setComments(res.data);
-        console.log('data',res.data);
+        console.log('data', res.data);
     }
-    const sendComment = async (content) =>{
+    const sendComment = async (content) => {
         const token = await AsyncStorage.getItem('token');
-        const res = await authApis(token).post(endpoints['comment-article'](item.id),{
+        const res = await authApis(token).post(endpoints['comment-article'](item.id), {
             "content": content
         });
-        console.log('data',res.data);
-        setComments([...comments, res.data]); 
+        console.log('data', res.data);
+        setComments([...comments, res.data]);
         setContent('');
     }
     const handleChatPress = () => {
@@ -95,31 +96,31 @@ const ArticleDetails = ({ route }) => {
             });
         }
     };
-    
-    const followUser = async ()=>{
-        if(!user){
+
+    const followUser = async () => {
+        if (!user) {
             nav.navigate('login', {
                 redirect: 'articleDetails',
                 params: { item: item },
             });
         }
-        else{
+        else {
             const token = await AsyncStorage.getItem('token');
-            console.log('token',token);
-            const res = await authApis(token).post(endpoints['follow-user'],{
+            console.log('token', token);
+            const res = await authApis(token).post(endpoints['follow-user'], {
                 "follow_user_id": articleDetail.user.id
             });
             setFollow(!follow);
-            console.log('data',res.data);
+            console.log('data', res.data);
         }
     }
-    useEffect(()=>{
+    useEffect(() => {
         loadArticleDetail();
         loadComment(content);
         loadFollow();
         loadAddress();
         loadImage();
-    },[]);
+    }, []);
     useEffect(() => {
         if (articleDetail) {
             loadFollow();
@@ -135,116 +136,135 @@ const ArticleDetails = ({ route }) => {
     };
     return (
         <View style={{ flex: 1 }}>
-            {articleDetail&&<>
-            <ScrollView style={styles.container}>
-                <Text style={styles.title}>{articleDetail.title}</Text>
-                <Text style={styles.location}>Địa Chỉ: {articleDetail.location}</Text>
-                <Text style={styles.createdAt}>
-                Thời Gian Đăng: {moment(articleDetail.created_at).format('hh:mm:ss, DD/MM/YYYY')}
-                </Text>
-                <Text style={styles.deposit}>Giá: {formattedDeposit} đ/tháng</Text>
-                <Text style={styles.numberPeople}>Số Người Ở: {articleDetail.number_people}</Text>
-                {articleDetail.acquisitions && <Text style={styles.content}>*Đặc Điểm Nhà Trọ: </Text>}
-                <View>
-                {articleDetail.acquisitions && articleDetail.acquisitions.map((acquisition) => (
-                    <Text key={acquisition.id} style={styles.content}>
-                    - {acquisition.name}: {acquisition.value}
-                    </Text>
-                ))}
-                </View>
-                
-                {/* <Text style={styles.content}>
+            {articleDetail && <>
+                <ScrollView style={styles.container}>
+                    <LinearGradient style={styles.wrapper} colors={['#ff9a9e', '#fad0c4']}>
+                        <View style={styles.header}>
+                            <Image
+                                source={{ uri: images.length > 0 ? images[0].image : defaultImage }}
+                                style={styles.mainImage}
+                            />
+                            <TouchableOpacity style={styles.favButton}>
+                                <FontAwesome name="heart" size={24} color="red" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.title}>{articleDetail.title}</Text>
+                        <Text style={styles.location}>Địa Chỉ: {articleDetail.location}</Text>
+                        <Text style={styles.createdAt}>
+                            Thời Gian Đăng: {moment(articleDetail.created_at).format('hh:mm:ss, DD/MM/YYYY')}
+                        </Text>
+                        <Text style={styles.deposit}>Giá: {formattedDeposit} đ/tháng</Text>
+                        <Text style={styles.numberPeople}>Số Người Ở: {articleDetail.number_people}</Text>
+                        {articleDetail.acquisitions && <Text style={styles.content}>*Đặc Điểm Nhà Trọ: </Text>}
+                        <View>
+                            {articleDetail.acquisitions && articleDetail.acquisitions.map((acquisition) => (
+                                <Text key={acquisition.id} style={styles.content}>
+                                    - {acquisition.name}: {acquisition.value}
+                                </Text>
+                            ))}
+                        </View>
+
+                        {/* <Text style={styles.content}>
                     Mô Tả Chi Tiết: {showFullContent ? articleDetail.content : `${articleDetail.content.substring(0, 100)}...`}
                 </Text> */}
-                {articleDetail.content.length > 100 && (
-                    <TouchableOpacity onPress={toggleContent}>
-                        <Text style={styles.seeMore}>{showFullContent ? 'Thu gọn' : 'Xem chi tiết'}</Text>
-                    </TouchableOpacity>
-                )}
-                {showMap && (
-                <MapView
-                    style={styles.map}
-                    initialRegion={{
-                        latitude:parseFloat(latitude) ,
-                        longitude: parseFloat(longitude),
-                        latitudeDelta: 0.0922,
-                        longitudeDelta: 0.0421,
-                    }}
-                >
-                    <Marker
-                        coordinate={{
-                            latitude: parseFloat(latitude),
-                            longitude: parseFloat(longitude),
-                        }}
-                        title={articleDetail.title}
-                        description={articleDetail.location}
-                    />
-                </MapView>
-            )}
-            <TouchableOpacity onPress={toggleMap}>
-                <Text style={styles.seeMore}>{showMap ? 'Ẩn bản đồ' : 'Xem bản đồ'}</Text>
-            </TouchableOpacity>
-            <View style={styles.imagesContainer}>
-                {images.length > 0 ? (
-                    images.map((image, index) => (
-                        <Image
-                            key={index}
-                            source={{ uri: image.image }}
-                            style={styles.image}
-                        />
-                    ))
-                ): null}
-            </View>
-            <View style={styles.commentContainer}>
-                    {comments && comments.map(c => (
-                        <List.Item
-                            key={c.id}
-                            title={c.content}
-                            description={moment(c.created_date).fromNow()}
-                            left={() => (
-                                <Image
-                                    source={{ uri: c.user.avatar }}
-                                    style={styles.avatar}
+                        {articleDetail.content.length > 100 && (
+                            <TouchableOpacity onPress={toggleContent}>
+                                <Text style={styles.seeMore}>{showFullContent ? 'Thu gọn' : 'Xem chi tiết'}</Text>
+                            </TouchableOpacity>
+                        )}
+                        {showMap && (
+                            <MapView
+                                style={styles.map}
+                                initialRegion={{
+                                    latitude: parseFloat(latitude),
+                                    longitude: parseFloat(longitude),
+                                    latitudeDelta: 0.0922,
+                                    longitudeDelta: 0.0421,
+                                }}
+                            >
+                                <Marker
+                                    coordinate={{
+                                        latitude: parseFloat(latitude),
+                                        longitude: parseFloat(longitude),
+                                    }}
+                                    title={articleDetail.title}
+                                    description={articleDetail.location}
                                 />
-                            )}
-                            style={styles.commentItem}
-                        />
-                    ))}
-                </View>
-            <View>
-                <TextInput placeholder='Nhập Bình Luận' value={content}
-                onChangeText={setContent}></TextInput>
-                <Button title='Gửi' color="#6200ee" onPress={()=> sendComment(content)}></Button>
-            </View>
-            </ScrollView>
+                            </MapView>
+                        )}
+                        <TouchableOpacity onPress={toggleMap}>
+                            <Text style={styles.seeMore}>{showMap ? 'Ẩn bản đồ' : 'Xem bản đồ'}</Text>
+                        </TouchableOpacity>
+                        <View style={styles.imagesContainer}>
+                            {images.length > 0 ? (
+                                images.map((image, index) => (
+                                    <Image
+                                        key={index}
+                                        source={{ uri: image.image }}
+                                        style={styles.image}
+                                    />
+                                ))
+                            ) : null}
+                        </View>
+                        <Text style={{ fontSize: 30 }}>Noi dung bai viet</Text>
 
-            <View style={styles.userContainer}>
-                <Text style={styles.userName}>
-                    {articleDetail.user.first_name} {articleDetail.user.last_name}
-                </Text>
-                <Text>{articleDetail.user.phone}</Text>
-                <View style={styles.iconContainer}>
-                    <TouchableOpacity onPress={handleChatPress} style={styles.chatButton}>
-                        <FontAwesome name="comments" size={24} color="blue" />
-                        <Text style={styles.chatText}>Chat</Text>
-                    </TouchableOpacity>
-                    {follow ? (
-                        <TouchableOpacity onPress={followUser} style={styles.chatFollow}>
-                            <FontAwesome name="user-times" size={24} color="blue" />
-                            <Text style={styles.chatText}>UnFollow</Text>
+                        <Text style={styles.content}>{articleDetail.content}</Text>
+
+                        <View style={{ borderBottomWidth: 2, borderBottomColor: 'gray', marginVertical: 20, marginHorizontal:20 }} />
+
+
+                        <View style={styles.commentContainer}>
+                            {comments && comments.map(c => (
+                                <List.Item
+                                    key={c.id}
+                                    title={c.content}
+                                    description={moment(c.created_date).fromNow()}
+                                    left={() => (
+                                        <Image
+                                            source={{ uri: c.user.avatar }}
+                                            style={styles.avatar}
+                                        />
+                                    )}
+                                    style={styles.commentItem}
+                                />
+                            ))}
+                        </View>
+                        <View>
+                            <TextInput placeholder='Nhập Bình Luận' value={content}
+                                onChangeText={setContent}></TextInput>
+                            <Button title='Gửi' color="#6200ee" onPress={() => sendComment(content)}></Button>
+                        </View>
+                    </LinearGradient>
+                </ScrollView>
+
+                <View style={styles.userContainer}>
+                    <Text style={styles.userName}>
+                        {articleDetail.user.first_name} {articleDetail.user.last_name}
+                    </Text>
+                    <Text>{articleDetail.user.phone}</Text>
+                    <View style={styles.iconContainer}>
+                        <TouchableOpacity onPress={handleChatPress} style={styles.chatButton}>
+                            <FontAwesome name="comments" size={24} color="blue" />
+                            <Text style={styles.chatText}>Chat</Text>
                         </TouchableOpacity>
-                    ): (
-                        <TouchableOpacity onPress={followUser} style={styles.chatFollow}>
-                            <FontAwesome name="user-plus" size={24} color="blue" />
-                            <Text style={styles.chatText}>Follow</Text>
+                        {follow ? (
+                            <TouchableOpacity onPress={followUser} style={styles.chatFollow}>
+                                <FontAwesome name="user-times" size={24} color="blue" />
+                                <Text style={styles.chatText}>UnFollow</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity onPress={followUser} style={styles.chatFollow}>
+                                <FontAwesome name="user-plus" size={24} color="blue" />
+                                <Text style={styles.chatText}>Follow</Text>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity onPress={handleCall} style={styles.callButton}>
+                            <FontAwesome name="phone" size={24} color="green" />
+                            <Text style={styles.callText}>Call</Text>
                         </TouchableOpacity>
-                    )}
-                    <TouchableOpacity onPress={handleCall} style={styles.callButton}>
-                        <FontAwesome name="phone" size={24} color="green" />
-                        <Text style={styles.callText}>Call</Text>
-                    </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
             </>}
         </View>
     );
@@ -252,7 +272,6 @@ const ArticleDetails = ({ route }) => {
 
 const styles = StyleSheet.create({
     container: {
-        padding: 20,
         backgroundColor: '#fff',
     },
     commentContainer: {
@@ -272,7 +291,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         marginRight: 10,
     },
-    
+
     title: {
         fontSize: 24,
         fontWeight: 'bold',
@@ -362,16 +381,31 @@ const styles = StyleSheet.create({
     },
     imagesContainer: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginTop: 10,
-        
+        flexWrap: 'nowrap',
+        overflow: 'scroll',
     },
     image: {
         width: 100,
         height: 100,
         margin: 5,
         marginRight: 20,
+        borderRadius: 20,
     },
+    header: { position: 'relative' },
+    mainImage: { width: '100%', height: 200, borderRadius: 10 },
+    favButton: { position: 'absolute', top: 10, right: 10 },
+    wrapper: {
+        flex: 1,
+        backgroundColor: 'rgba(110, 221, 238, 0.4)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        padding: 20,
+        paddingTop: 60,
+        margin:10,
+        borderRadius: 20,
+    }
 });
 
 export default ArticleDetails;
