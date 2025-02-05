@@ -52,7 +52,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
         return Response(serializers.HouseArticleSerializer(house,many=True).data)
     
 
-class HouseArticleViewSet(viewsets.ViewSet,generics.ListCreateAPIView):
+class HouseArticleViewSet(viewsets.ViewSet,generics.ListCreateAPIView,generics.RetrieveUpdateDestroyAPIView):
     queryset = HouseArticle.objects.filter(active=True)
     serializer_class = serializers.HouseArticleSerializer
 
@@ -119,7 +119,7 @@ class AddtionallInfomaionViewSet(viewsets.ViewSet,generics.ListCreateAPIView):
     queryset = AddtionallInfomaion.objects.all()
     serializer_class = serializers.AddtionallInfomaionSerializer
 
-class AcquistionArticleViewSet(HouseArticleViewSet, generics.ListCreateAPIView,generics.RetrieveUpdateAPIView):
+class AcquistionArticleViewSet(HouseArticleViewSet):
     queryset = AcquistionArticle.objects.filter(active=True).order_by('-id')
     serializer_class = serializers.AcquistionArticleSerializer
 
@@ -150,7 +150,13 @@ class AcquistionArticleViewSet(HouseArticleViewSet, generics.ListCreateAPIView,g
 
     def retrieve(self, request, *args, **kwargs):
         data = self.get_object()
+        print('data',data)
         return Response(serializers.AcquisitionDetailSerializer(data).data)
+    
+    def update(self, request, *args, **kwargs):
+        data_clone = request.data.copy()
+        print(data_clone)
+        return super().update(request, *args, **kwargs)
     
     def get_queryset(self):
         query = self.queryset
@@ -183,7 +189,7 @@ class AcquistionArticleViewSet(HouseArticleViewSet, generics.ListCreateAPIView,g
         return Response(serializers.AddressHouseArticleSerializer(address).data)
 
 
-class LookingArticleViewSet(viewsets.ViewSet,generics.ListCreateAPIView,generics.RetrieveUpdateAPIView):
+class LookingArticleViewSet(HouseArticleViewSet):
     queryset = LookingArticle.objects.filter(active=True).order_by('-id')
     serializer_class = serializers.LookingArticleSerializer
     def get_queryset(self):
@@ -198,15 +204,15 @@ class LookingArticleViewSet(viewsets.ViewSet,generics.ListCreateAPIView,generics
         if self.action in ['create']:
             return [perms.IsTenant()]
         return super().get_permissions()
-
     
     def retrieve(self, request, *args, **kwargs):
-        return Response(serializers.LookingArticleDetailSerializer(request.data).data)
-
+        data = self.get_object()
+        return Response(serializers.LookingArticleDetailSerializer(data).data)
     
     def create(self, request, *args, **kwargs):
         data_clone = request.data.copy()
         data_clone = self.execute_before_create(request)
+        print(data_clone)
 
         serializer = self.get_serializer(data=data_clone)
         serializer.is_valid(raise_exception=True)

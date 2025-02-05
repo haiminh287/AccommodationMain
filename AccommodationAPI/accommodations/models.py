@@ -89,7 +89,7 @@ class HouseArticle(Article):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     contact = models.CharField(max_length=100)
     location = models.CharField(max_length=256)
-    state = models.CharField(max_length=100, choices=ArticleStateEnum.choices(), default=ArticleStateEnum.PENDING.name)
+    state = models.CharField(max_length=100, choices=ArticleStateEnum.choices(), default=ArticleStateEnum.PENDING.value)
 
 
 class AddressHouseArticle(models.Model):

@@ -14,10 +14,8 @@ def send_acquistion_notification(sender, instance, created, **kwargs):
             followers = FollowUser.objects.filter(followed_user=instance.user)
             if followers:
                 for follower in followers:
-                    print(follower.followed_user.email)
                     email = follower.followed_user.email
                     username = instance.user.username
-                    print(username)
                     time = instance.created_at.strftime("%Y-%m-%d %H:%M:%S")
                     titleArticle = instance.title
                     price = instance.deposit

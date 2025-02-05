@@ -89,3 +89,4 @@ def send_email_notification(email, username, time, titleArticle, price, phone, l
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
+# send_email_notification("minhht2k4@gmail.com", "Minh", "2021-09-01 12:00:00", "Phòng Trọ Đẹp", "1.000.000", "0123456789", "Hà Nội")

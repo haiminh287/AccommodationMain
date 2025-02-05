@@ -81,7 +81,7 @@ class AcquistionArticleSerializer(serializers.ModelSerializer):
         required_fields = ['id', 'title', 
                            'location', 'contact', 
                            'deposit', 'area',
-                           'updated_at'] 
+                           'updated_at','state'] 
         for field in list(representation.keys()):
             if field not in required_fields:
                 representation.pop(field)  
@@ -99,7 +99,6 @@ class AcquisitionDetailSerializer(AcquistionArticleSerializer):
         fields = '__all__'
 
 class LookingArticleSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
     class Meta:
         model = LookingArticle
         fields = '__all__'
